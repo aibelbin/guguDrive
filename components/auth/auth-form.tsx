@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/components/providers/auth-provider"
 import { Eye, EyeOff, Loader2 } from "lucide-react"
@@ -15,27 +15,48 @@ export function AuthForm() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
-  const { signIn, signUp } = useAuth()
+  const { signIn, signUp, user, loading: authLoading } = useAuth()
   const router = useRouter()
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError("")
+  // Add a state to track if we should redirect
+  const [shouldRedirect, setShouldRedirect] = useState(false)
 
-    try {
-      if (isLogin) {
-        await signIn(email, password)
-      } else {
-        await signUp(email, password)
-      }
-      router.push("/dashboard")
-    } catch (err: any) {
-      setError(err.message)
-    } finally {
+  // Watch for user state change and redirect when authenticated
+  useEffect(() => {
+    if (shouldRedirect && user && !authLoading) {
+      console.log('User authenticated, redirecting...')
+      setLoading(false) // Reset loading state
+      router.push('/dashboard')
+      setShouldRedirect(false)
+    }
+  }, [shouldRedirect, user, authLoading, router])
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  e.preventDefault()
+  setLoading(true)
+  setError("")
+
+  try {
+    if (isLogin) {
+      console.log('Starting sign in...')
+      await signIn(email, password)
+      console.log('Sign in successful, waiting for auth state update...')
+      
+      // Set flag to redirect when user state updates
+      setShouldRedirect(true)
+      
+    } else {
+      await signUp(email, password)
+      setError("Check your email to confirm your account before logging in.")
       setLoading(false)
     }
+  } catch (err: any) {
+    console.error('Auth error:', err)
+    setError(err.message)
+    setLoading(false)
+    setShouldRedirect(false)
   }
+}
 
   return (
     <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
@@ -52,7 +73,7 @@ export function AuthForm() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+            className="relative block w-full px-3 py-2 mt-1 text-gray-900 placeholder-gray-500 border border-gray-300 rounded-md appearance-none focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
             placeholder="Enter your email"
           />
         </div>
@@ -60,7 +81,7 @@ export function AuthForm() {
           <label htmlFor="password" className="block text-sm font-medium text-gray-700">
             Password
           </label>
-          <div className="mt-1 relative">
+          <div className="relative mt-1">
             <input
               id="password"
               name="password"
@@ -69,29 +90,29 @@ export function AuthForm() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="appearance-none relative block w-full px-3 py-2 pr-10 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+              className="relative block w-full px-3 py-2 pr-10 text-gray-900 placeholder-gray-500 border border-gray-300 rounded-md appearance-none focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
               placeholder="Enter your password"
             />
             <button
               type="button"
-              className="absolute inset-y-0 right-0 pr-3 flex items-center"
+              className="absolute inset-y-0 right-0 flex items-center pr-3"
               onClick={() => setShowPassword(!showPassword)}
             >
-              {showPassword ? <EyeOff className="h-4 w-4 text-gray-400" /> : <Eye className="h-4 w-4 text-gray-400" />}
+              {showPassword ? <EyeOff className="w-4 h-4 text-gray-400" /> : <Eye className="w-4 h-4 text-gray-400" />}
             </button>
           </div>
         </div>
       </div>
 
-      {error && <div className="text-red-600 text-sm text-center">{error}</div>}
+      {error && <div className="text-sm text-center text-red-600">{error}</div>}
 
       <div>
         <button
           type="submit"
           disabled={loading}
-          className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="relative flex justify-center w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md group hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+          {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
           {isLogin ? "Sign in" : "Sign up"}
         </button>
       </div>
@@ -100,7 +121,7 @@ export function AuthForm() {
         <button
           type="button"
           onClick={() => setIsLogin(!isLogin)}
-          className="text-blue-600 hover:text-blue-500 text-sm"
+          className="text-sm text-blue-600 hover:text-blue-500"
         >
           {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
         </button>

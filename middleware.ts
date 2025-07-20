@@ -6,19 +6,9 @@ export async function middleware(req: NextRequest) {
   const res = NextResponse.next()
   const supabase = createMiddlewareClient({ req, res })
 
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
-
-  // If user is not signed in and the current path is not /auth or /, redirect to /auth
-  if (!session && !req.nextUrl.pathname.startsWith("/auth") && req.nextUrl.pathname !== "/") {
-    return NextResponse.redirect(new URL("/auth", req.url))
-  }
-
-  // If user is signed in and the current path is /auth, redirect to /dashboard
-  if (session && req.nextUrl.pathname.startsWith("/auth")) {
-    return NextResponse.redirect(new URL("/dashboard", req.url))
-  }
+  // Just refresh the session, but don't redirect based on auth state
+  // Let the client-side handle all auth redirects
+  await supabase.auth.getSession()
 
   return res
 }

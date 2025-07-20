@@ -1,9 +1,9 @@
 export function StorageUsage() {
   const usageData = [
-    { name: "Photos", value: 45, color: "bg-blue-500" },
-    { name: "Videos", value: 30, color: "bg-green-500" },
-    { name: "Documents", value: 15, color: "bg-yellow-500" },
-    { name: "Other", value: 10, color: "bg-gray-500" },
+    { name: "Photos", value: 0, color: "bg-blue-500" },
+    { name: "Videos", value: 0, color: "bg-green-500" },
+    { name: "Documents", value: 0, color: "bg-yellow-500" },
+    { name: "Other", value: 0, color: "bg-gray-500" },
   ]
 
   return (
@@ -23,6 +23,9 @@ export function StorageUsage() {
             </div>
           </div>
         ))}
+        <div className="mt-4 text-center text-sm text-gray-500">
+          No storage used yet
+        </div>
       </div>
     </div>
   )
