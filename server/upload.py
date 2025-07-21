@@ -10,43 +10,32 @@ from typing import List
 
 app = FastAPI(title="LokalStowage Upload API", version="1.0.0")
 
-# Add CORS middleware to allow requests from your Next.js app
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Your Next.js app URL
+    allow_origins=["http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Upload directory
 UPLOAD_DIR = "/home/luca/Documents/File"
 
-# Create upload directory if it doesn't exist
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 @app.post("/file_upload")
 async def upload_file(file: UploadFile = File(...)):
-    """
-    Upload a single file to the server
-    """
     try:
-        # Validate file
         if not file.filename:
             raise HTTPException(status_code=400, detail="No file provided")
         
-        # Create unique filename to avoid conflicts
         file_extension = Path(file.filename).suffix
         unique_filename = f"{uuid.uuid4().hex}_{datetime.now().strftime('%Y%m%d_%H%M%S')}{file_extension}"
         
-        # Full path where file will be saved
         file_path = os.path.join(UPLOAD_DIR, unique_filename)
         
-        # Save file to disk
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
         
-        # Get file size
         file_size = os.path.getsize(file_path)
         
         return JSONResponse(
@@ -66,9 +55,6 @@ async def upload_file(file: UploadFile = File(...)):
 
 @app.post("/file_upload_multiple")
 async def upload_multiple_files(files: List[UploadFile] = File(...)):
-    """
-    Upload multiple files to the server
-    """
     uploaded_files = []
     failed_files = []
     
@@ -78,18 +64,14 @@ async def upload_multiple_files(files: List[UploadFile] = File(...)):
                 failed_files.append({"filename": "unknown", "error": "No filename provided"})
                 continue
             
-            # Create unique filename
             file_extension = Path(file.filename).suffix
             unique_filename = f"{uuid.uuid4().hex}_{datetime.now().strftime('%Y%m%d_%H%M%S')}{file_extension}"
             
-            # Full path where file will be saved
             file_path = os.path.join(UPLOAD_DIR, unique_filename)
             
-            # Save file to disk
             with open(file_path, "wb") as buffer:
                 shutil.copyfileobj(file.file, buffer)
             
-            # Get file size
             file_size = os.path.getsize(file_path)
             
             uploaded_files.append({
@@ -119,9 +101,6 @@ async def upload_multiple_files(files: List[UploadFile] = File(...)):
 
 @app.get("/files/stats")
 async def get_file_stats():
-    """
-    Get statistics about uploaded files
-    """
     try:
         if not os.path.exists(UPLOAD_DIR):
             return JSONResponse(content={
@@ -155,9 +134,6 @@ async def get_file_stats():
 
 @app.get("/files/list")
 async def list_files():
-    """
-    List all uploaded files with their details
-    """
     try:
         if not os.path.exists(UPLOAD_DIR):
             return JSONResponse(content={"files": []})
@@ -176,7 +152,6 @@ async def list_files():
                     "modified_time": datetime.fromtimestamp(stat_info.st_mtime).isoformat(),
                 })
         
-        # Sort by creation time (newest first)
         files_info.sort(key=lambda x: x["created_time"], reverse=True)
         
         return JSONResponse(content={
@@ -189,9 +164,6 @@ async def list_files():
 
 @app.get("/")
 async def root():
-    """
-    Health check endpoint
-    """
     return {
         "message": "LokalStowage Upload API is running!",
         "upload_directory": UPLOAD_DIR,
